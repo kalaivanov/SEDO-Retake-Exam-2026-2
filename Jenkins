@@ -1,0 +1,53 @@
+pipeline {
+    agent any
+
+    triggers {
+        // Trigger when changes are pushed to main (webhook recommended)
+        pollSCM('H/2 * * * *')
+    }
+
+    options {
+        timestamps()
+        ansiColor('xterm')
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                bat 'npm install'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                bat 'npm run build'
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                bat 'npm test'
+            }
+        }
+    }
+
+    post {
+        always {
+            junit 'test-results/**/*.xml'
+            archiveArtifacts artifacts: 'dist/**', fingerprint: true
+        }
+        success {
+            echo 'Build and tests completed successfully'
+        }
+        failure {
+            echo 'Build or tests failed'
+        }
+    }
+}
